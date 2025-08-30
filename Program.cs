@@ -23,6 +23,7 @@ using LearnWebApi.Interfaces.Services;
 using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.Authorization;
 using LearnWebApi.Athorization;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -59,20 +60,41 @@ builder.Services.Configure<RouteOptions>(options =>
 });
 
 // Ad authentication service
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddCookie(options => // Thêm dịch vụ Cookie để quản lý session trong luồng redirect
+{
+    //  Luồng OAuth 2.0 hoạt động bằng cách chuyển hướng (redirect). 
+    // Khi Google chuyển hướng người dùng trở lại ứng dụng của bạn, thông tin danh tính của họ 
+    // (claims) cần được lưu tạm ở đâu đó. ASP.NET Core sử dụng một cookie tạm thời cho việc này. Đó là lý do chúng ta cần
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(5);
+    options.Cookie.HttpOnly = true;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
-        };
-    });
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidAudience = builder.Configuration["Jwt:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+    };
+})
+.AddGoogle(options => // Thêm trình xác thực Google
+{
+    options.ClientId = builder.Configuration["Authentication:Google:ClientId"]!;
+    options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]!;
+    
+    // Khi Google gọi lại, nó sẽ gửi thông tin vào một cookie tạm thời.
+    // Chúng ta chỉ định scheme cookie đã đăng ký ở trên để xử lý việc này.
+    options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme; 
+});
 // Authorization
 builder.Services.AddSingleton<IAuthorizationHandler, MinimumAgeHandler>();
 builder.Services.AddSingleton<IAuthorizationHandler, EmailDomainHandler>();

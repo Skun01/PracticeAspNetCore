@@ -1,5 +1,6 @@
 using System;
 using System.IdentityModel.Tokens.Jwt;
+using System.Reflection.Metadata.Ecma335;
 using System.Security.Claims;
 using System.Text;
 using BCrypt.Net;
@@ -8,24 +9,28 @@ using LearnWebApi.Entities;
 using LearnWebApi.Interfaces.Repositories;
 using LearnWebApi.Interfaces.Services;
 using LearnWebApi.Shared;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 
 namespace LearnWebApi.Services;
 
-public class AuthenticationService : IAuthenticationService
+public class AuthenticationService : Interfaces.Services.IAuthenticationService
 {
     private readonly ITokenService _tokenService;
     private readonly ICustomerRepository _customerRepository;
     private readonly IConfiguration _configuration;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
+    private readonly LinkGenerator _linker;
+
     public AuthenticationService(ITokenService tokenService, ICustomerRepository customerRepository,
-        IRefreshTokenRepository refreshTokenRepository, IConfiguration configuration)
+        IRefreshTokenRepository refreshTokenRepository, IConfiguration configuration, LinkGenerator linker)
     {
         _tokenService = tokenService;
         _customerRepository = customerRepository;
         _refreshTokenRepository = refreshTokenRepository;
         _configuration = configuration;
+        _linker = linker;
     }
 
     public Task<Result<Customer>> GetCurrentLoginCustomerAsync(string token)
@@ -56,6 +61,19 @@ public class AuthenticationService : IAuthenticationService
 
     }
 
+    public Result LoginGoogle()
+    {
+        var properties = new AuthenticationProperties
+        {
+            RedirectUri = _linker.GetPathByName("GoogleCallback")
+        };
+        return Result.Success();
+    }
+    public Task<Result<string>> GoogleCallback()
+    {
+        throw new NotImplementedException();
+    }
+
     public async Task<Result<TokenResponseModel>> RefreshToken(TokenRequestModel request)
     {
         try
@@ -80,7 +98,7 @@ public class AuthenticationService : IAuthenticationService
             var newAccessToken = _tokenService.CreateToken(customer);
             var newRefreshToken = _tokenService.CreateRefreshToken(customerId);
             await _refreshTokenRepository.AddAsync(newRefreshToken);
-            
+
             TokenResponseModel response = new(newAccessToken, newRefreshToken.Token);
             return Result.Success(response);
         }

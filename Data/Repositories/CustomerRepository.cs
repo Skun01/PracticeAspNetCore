@@ -41,7 +41,10 @@ public class CustomerRepository : ICustomerRepository
 
     public async Task<Customer> GetByIdAsync(int id)
     {
-        return await _context.Customers.FirstOrDefaultAsync(c => c.Id == id);
+        Customer? target = await _context.Customers.FirstOrDefaultAsync(c => c.Id == id);
+        if (target is null)
+            throw new KeyNotFoundException("Customer not found!");
+        return target;
     }
 
     public async Task<string> GetHashPasswordByEmailAsync(string email)

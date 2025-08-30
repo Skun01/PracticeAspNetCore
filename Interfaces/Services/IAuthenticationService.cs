@@ -11,4 +11,7 @@ public interface IAuthenticationService
     Task<Result<Customer>> RegisterAsync(CustomerRegisterRequest request);
     Task<Result<Customer>> GetCurrentLoginCustomerAsync(string token);
     Task<Result<TokenResponseModel>> RefreshToken(TokenRequestModel request);
+    Result LoginGoogle();
+    Task<Result<string>> GoogleCallback();
+
 }
