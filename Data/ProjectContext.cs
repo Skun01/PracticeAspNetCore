@@ -10,6 +10,7 @@ public class ProjectContext : DbContext
     public DbSet<Product> Products { set; get; }
     public DbSet<Customer> Customers { set; get; }
     public DbSet<RefreshToken> RefreshTokens { set; get; }
+    public DbSet<ApiKey> ApiKeys { set; get; }
 
     public ProjectContext(DbContextOptions<ProjectContext> options) : base(options) { }
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
@@ -19,6 +20,12 @@ public class ProjectContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        modelBuilder.Entity<ApiKey>(entity =>
+        {
+            entity
+                .HasIndex(a => a.Key)
+                .IsUnique();
+        });
         modelBuilder.Entity<Product>(entity =>
         {
             entity

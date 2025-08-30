@@ -167,6 +167,7 @@ builder.Services.AddAntiforgery();
 
 // Middleware
 builder.Services.AddSingleton<RequestCountingMiddlware>();
+builder.Services.AddApiKeyAuthentication();
 
 // CORS
 builder.Services.AddCors(options =>
