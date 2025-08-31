@@ -121,6 +121,11 @@ builder.Services.AddAuthorization(Options =>
 builder.Services.AddValidatorsFromAssemblyContaining<CustomerRequestValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<ProductRequestValidator>();
 
+// using caching 
+builder.Services.AddMemoryCache();
+builder.Services.AddResponseCaching();
+builder.Services.AddScoped<ICacheService, MemoryCacheService>();
+
 //Global exception
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
@@ -172,14 +177,21 @@ builder.Services.AddApiKeyAuthentication();
 // CORS
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(
+    options.AddPolicy("AllowSpecificOrigin",
         policy =>
         {
             policy.WithOrigins("http://localhost:3000")
-                  .AllowAnyMethod()
-                  .AllowAnyHeader();
+                  .WithMethods("GET", "POST", "PUT", "DELETE")
+                  .WithHeaders("Content-Type", "Authorization");
         }
     );
+    options.AddPolicy("AllowAnyOrigin",
+        policy =>
+        {
+            policy.AllowAnyOrigin()
+                   .AllowAnyMethod()
+                   .AllowAnyHeader();
+        });
 });
 
 // Filter
@@ -203,7 +215,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseCors();
+app.UseCors("AllowSpecificOrigin");
 
 // Middleware to display request timeline
 // app.UseSerilogRequestLogging(); or

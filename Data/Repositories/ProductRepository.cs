@@ -34,6 +34,11 @@ public class ProductRepository : IProductRepository
         return target;
     }
 
+    public async Task<IEnumerable<Product>> GetAll()
+    {
+        return await _context.Products.AsNoTracking().ToListAsync();
+    }
+
     public async Task<IEnumerable<Product>> SearchProductAsync(ProductQueryParameters query)
     {
         IQueryable<Product> searchQuery = _context.Products.AsQueryable();

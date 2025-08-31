@@ -4,6 +4,7 @@ using FluentValidation;
 using LearnWebApi.DTOs;
 using LearnWebApi.DTOs.Product;
 using LearnWebApi.Entities;
+using LearnWebApi.Extensions;
 using LearnWebApi.Filters;
 using LearnWebApi.Interfaces;
 using LearnWebApi.Validators;
@@ -18,6 +19,12 @@ public static class ProductEndpoints
         var group = app.MapGroup(routePrefix)
             .WithTags("Products")
             .AddEndpointFilter<LogEndpointExecutionFilter>();
+
+        group.MapGet("/", async (IProductService productService) =>
+        {
+            var products = await productService.GetAllProducts();
+            return Results.Ok(products);
+        });
 
         group.MapPost("/", async ([FromBody] ProductRequest request
             , IProductService productService, IValidator<ProductRequest> validator
@@ -57,7 +64,7 @@ public static class ProductEndpoints
             return result.IsSuccess ?
                 Results.Ok(result.Value)
                 : Results.NotFound(result.Error);
-        });
+        }).WithResponseCache(60);
 
         group.MapGet("/search", async ([AsParameters] ProductQueryParameters query, IProductService productService) =>
         {
